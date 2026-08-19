@@ -1,0 +1,32 @@
+feature,definition,why
+LIVING_SQFT,raw,above-grade living area
+LOG_LIVING,log(LIVING_SQFT),size skew 1.17 -> -0.03; gives constant-elasticity (% on %) interpretation
+LIVING_SQ,LIVING_SQFT^2/1e6,curvature for level-form models
+TOT_FIN_SQFT,LIVING_SQFT+FBSMT_SQFT,total finished space a buyer actually uses
+LOG_TOT_FIN,log(TOT_FIN_SQFT),"same, log scale"
+FBSMT_SQFT / LOG_FBSMT,raw / log1p,finished basement; 67% are 0 so log1p not log
+BSMT_AREA / LOG_BSMT,raw / log1p,total basement; 55% are 0
+BSMT_FIN_RATIO,"FBSMT/BSMT, 0 if none",finished share matters more than raw basement sqft
+LAND_SQFT / LOG_LAND,raw / log1p,"0 for 100% of condos - structural zero, not missing"
+LAND_PER_LIVING,LAND/LIVING,lot generosity relative to house size
+GRD_AREA,raw,"garden level; 95% zeros, kept for completeness"
+BLDG_AGE / LOG_AGE / AGE_SQ,raw / log1p / sq,depreciation is steep early then flat -> non-linear in age
+EFF_AGE,RM_AGE if remodeled else BLDG_AGE,years since the home was last new-or-renovated
+LOG_EFF_AGE,log1p(EFF_AGE),"same, non-linear"
+EVER_REMOD,1 if RM_AGE not NA,"RM_AGE NA = never remodeled, NOT missing data"
+IS_NEW,BLDG_AGE<=1,new construction premium (259 rows)
+IS_HISTORIC,BLDG_AGE>=80,"pre-war Denver stock carries a premium, not a discount"
+"BED_RMS, FULL_B, HLF_B, STORY",raw,room counts
+TOT_BATH,FULL_B + 0.5*HLF_B,a half bath is worth ~half a full one; 2 vars -> 1
+BATH_PER_BED,"TOT_BATH/max(BED_RMS,1)",fixture quality proxy
+SQFT_PER_ROOM,LIVING/(BED+FULL_B),room-size proxy (open plan vs chopped up)
+IS_STUDIO,BED_RMS==0,"32 studios; 0 bedrooms is real, not an error"
+IS_CONDO,PROP_CLASS==CONDOMINIUMS,"730/2383 train; drives land, basement, style"
+HAS_LAND/HAS_BSMT/HAS_FBSMT/HAS_GRD,presence flags,separates 'none' (level shift) from 'small' (slope)
+NB_* (13 dummies),"NBHD, ref = GATEWAY/GREEN VALLEY RANCH","14 levels, all present in both train and test"
+ST_* (5 dummies),"STYLE_G, ref = 1STORY",12 raw levels collapsed to 6 (1STORY / 2STORY / PARTIAL_STORY / MULTILEVEL / END_UNIT / MIDDLE_UNIT); smallest group now 106 obs
+SLP_<nbhd> (13),NB_x * LOG_LIVING,slope dummies: $/sqft gradient differs by neighborhood
+SLP_CONDO,IS_CONDO * LOG_LIVING,condos price per sqft differently from houses
+SLP_AGE_CONDO,IS_CONDO * LOG_AGE,condos and houses age differently
+SLP_LAND_SFR,(1-IS_CONDO) * LOG_LAND,land only has a price for single-family homes
+HINGE_25/50/75/90 (optional),"max(LOG_LIVING - knot, 0)",piecewise-linear bend in the size gradient; -$531 CV RMSE
